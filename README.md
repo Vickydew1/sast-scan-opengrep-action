@@ -1,0 +1,1 @@
+# opengrep-sast-scan-action
