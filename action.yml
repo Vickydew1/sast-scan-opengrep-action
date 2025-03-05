@@ -58,7 +58,7 @@ runs:
           -e COMMIT_REF="${{ inputs.commit_ref }}" \
           -e PIPELINE_ID="${{ inputs.pipeline_id }}" \
           -e JOB_URL="${{ inputs.job_url }}" \
-          accuknox/REPLACE #TODO
+          accuknox/opengrepjob:1.0.0
         echo "OPENGREP_EXIT_CODE=$?" >> $GITHUB_ENV
 
     - name: Push report to CSPM panel
