@@ -13,7 +13,7 @@ This performs an Opengrep SAST scan on your repository and uploads the results t
 |------|-------------|----------|---------|
 | pipeline_id | GitHub Run ID | Yes | `${{ github.run_id }}` |
 | job_url | GitHub Job URL | Yes | `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}` |
-| accuknox_endpoint | CSPM panel URL | Yes ||
+| accuknox_endpoint | CSPM panel URL | Yes | `cspm.demo.accuknox.com` |
 | accuknox_tenant | AccuKnox Tenant ID | Yes |  |
 | accuknox_token | AccuKnox API Token | Yes |  |
 | accuknox_label | Label for scan results | Yes |  |

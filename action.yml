@@ -26,6 +26,7 @@ inputs:
     default: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
   accuknox_endpoint:
     description: 'The URL of the CSPM panel to push the scan results to'
+    default: 'cspm.demo.accuknox.com'
     required: true
   accuknox_tenant:
     description: 'The ID of the tenant associated with the CSPM panel.'
