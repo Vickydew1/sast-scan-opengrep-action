@@ -1,10 +1,10 @@
-# Accuknox Opengrep Scan GitHub Action
+# Accuknox SAST: Opengrep
 
-This performs an OpenGrep scan on your repository and uploads the results to Accuknox's CSPM panel. It helps in identifying security issues and integrates seamlessly with GitHub Actions workflows.
+This performs an Opengrep SAST scan on your repository and uploads the results to AccuKnox's CSPM panel. It helps in identifying security issues and integrates seamlessly with GitHub Actions workflows.
 
 ## Features
-- Runs OpenGrep to analyze the repository.
-- Uploads scan results to Accuknox CSPM panel.
+- Runs Opengrep to analyze the repository.
+- Uploads scan results to AccuKnox CSPM panel.
 - Supports artifact upload to GitHub.
 - Allows soft failure for non-blocking scans.
 
@@ -22,15 +22,15 @@ This performs an OpenGrep scan on your repository and uploads the results to Acc
 
 ## Usage Example
 ```yaml
-name: Accuknox - Opengrep Scan
+name: Accuknox SAST: Opengrep
 
 on:
   push:
     branches:
-      - test
+      - main
   pull_request:
     branches:
-      - test
+      - main
 
 jobs:
   accuknox-cicd:
@@ -39,8 +39,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run Accuknox - OpenGrep
-        uses: accuknox/opengrep-sast-scan-action@1.0.0
+      - name: "Run Accuknox SAST: Opengrep"
+        uses: accuknox/sast-scan-opengrep-action@1.0.0
         with:
           accuknox_endpoint: "cspm.stage.accuknox.com"
           accuknox_tenant: "${{ secrets.STAGE_TENANT_ID }}"

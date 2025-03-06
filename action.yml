@@ -1,6 +1,6 @@
-name: 'Accuknox Opengrep Scan'
-description: 'Perform OpenGrep scan on your repository and upload the results to Accuknox'
-author: "Accuknox"
+name: 'Accuknox SAST: Opengrep'
+description: 'Perform an Opengrep SAST scan on your repository and upload the results to AccuKnox.'
+author: "AccuKnox"
 
 branding:  
   icon: "activity"  
@@ -48,7 +48,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Run OpenGrep
+    - name: Run Opengrep
       shell: bash
       run: |
         set +e
