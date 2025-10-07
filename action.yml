@@ -1,107 +1,72 @@
-name: 'Accuknox SAST: Opengrep'
-description: 'Perform an Opengrep SAST scan on your repository and upload the results to AccuKnox.'
-author: "AccuKnox"
+name: "AccuKnox SAST Scan"
+description: "Run AccuKnox SAST scan on the repository; results are automatically uploaded to CSPM panel."
 
-branding:  
-  icon: "activity"  
-  color: "blue"   
+branding:
+  icon: "shield"
+  color: "purple"
 
 inputs:
-  repository_url:
-    description: 'Repository URL'
+  soft_fail:
+    description: "Do not fail the pipeline if scan finds issues"
     required: false
-  commit_sha:
-    description: 'Commit SHA'
-    required: false
-  commit_ref:
-    description: 'Commit Reference'
-    required: false
+    default: true
   pipeline_id:
-    description: 'Github Run ID'
-    required: true
-    default: '${{ github.run_id }}'
+    description: "Pipeline/Job ID to correlate with CI/CD runs"
+    required: false
+    default: ${{ github.run_id }}
   job_url:
-    description: 'Github Job URL'
-    required: true
-    default: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+    description: "URL for the current GitHub job"
+    required: false
+    default: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   accuknox_endpoint:
-    description: 'The URL of the CSPM panel to push the scan results to'
-    default: 'cspm.demo.accuknox.com'
-    required: true
-  accuknox_tenant:
-    description: 'The ID of the tenant associated with the CSPM panel.'
+    description: "CSPM panel endpoint URL"
     required: true
   accuknox_token:
-    description: 'The token for authenticating with the CSPM panel.'
+    description: "Token for authenticating with CSPM panel"
     required: true
   accuknox_label:
-    description: 'The label created in AccuKnox SaaS for associating scan results.'
+    description: "Label in AccuKnox SaaS for scan results"
     required: true
-  input_soft_fail:
-    description: 'Do not return an error code if there are failed checks.'
-    required: true
-    default: 'false'
-  upload_artifact:
-    description: 'Upload the scan results as a GitHub artifact'
-    required: true
-    default: 'true'
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: Run Opengrep
+    - name: Run AccuKnox SAST Scan
       shell: bash
+      env:
+        SOFT_FAIL: ${{ inputs.soft_fail }}
+        PIPELINE_ID: ${{ inputs.pipeline_id }}
+        JOB_URL: ${{ inputs.job_url }}
+        ACCUKNOX_ENDPOINT: ${{ inputs.accuknox_endpoint }}
+        ACCUKNOX_TOKEN: ${{ inputs.accuknox_token }}
+        ACCUKNOX_LABEL: ${{ inputs.accuknox_label }}
       run: |
-        set +e
-        docker run --rm -v "$PWD:/app" \
-          -e REPOSITORY_URL="${{ inputs.repository_url }}" \
-          -e COMMIT_SHA="${{ inputs.commit_sha }}" \
-          -e COMMIT_REF="${{ inputs.commit_ref }}" \
-          -e PIPELINE_ID="${{ inputs.pipeline_id }}" \
-          -e JOB_URL="${{ inputs.job_url }}" \
-          accuknox/opengrepjob:1.0.0
-        echo "OPENGREP_EXIT_CODE=$?" >> $GITHUB_ENV
-
-    - name: Push report to CSPM panel
-      shell: bash
-      run: |
-        set +e
-        curl --silent --show-error --fail --location \
-          --request POST "https://${{ inputs.accuknox_endpoint }}/api/v1/artifact/?tenant_id=${{ inputs.accuknox_tenant }}&data_type=SG&label_id=${{ inputs.accuknox_label }}&save_to_s3=true" \
-          --header "Tenant-Id: ${{ inputs.accuknox_tenant }}" \
-          --header "Authorization: Bearer ${{ inputs.accuknox_token }}" \
-          --form 'file=@"results.json"'
-        echo "AK_EXIT_CODE=$?" >> $GITHUB_ENV
-
-    - name: Upload Scan Results as Artifact
-      if: inputs.upload_artifact == 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: scan-results-${{ github.sha }}
-        path: results.json
-        if-no-files-found: ignore
-
-    - name: Fail pipeline if scan fails
-      shell: bash
-      run: |
-        FINAL_EXIT_CODE=0
-
-        if [ "$OPENGREP_EXIT_CODE" -ne 0 ] || [ "$AK_EXIT_CODE" -ne 0 ]; then
-          FINAL_EXIT_CODE=$OPENGREP_EXIT_CODE
-          if [ "$OPENGREP_EXIT_CODE" -eq 0 ]; then
-            FINAL_EXIT_CODE=$AK_EXIT_CODE
-          fi
+        # Validate required secrets
+        if [ -z "$ACCUKNOX_ENDPOINT" ] || [ -z "$ACCUKNOX_TOKEN" ] || [ -z "$ACCUKNOX_LABEL" ]; then
+          echo "ERROR: ACCUKNOX_ENDPOINT, ACCUKNOX_TOKEN, and ACCUKNOX_LABEL must be set!"
+          exit 1
         fi
 
-        echo "FINAL_EXIT_CODE=$FINAL_EXIT_CODE"
+        # Download latest ASPM Scanner
+        echo "Downloading AccuKnox ASPM Scanner..."
+        curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.13.4/accuknox-aspm-scanner -o accuknox-aspm-scanner
+        chmod +x accuknox-aspm-scanner
 
-        if [ "$FINAL_EXIT_CODE" -ne 0 ]; then
-          if [ "${{ inputs.input_soft_fail }}" = "true" ]; then
-            echo "Scan failed, but soft fail is enabled. Continuing..."
-          else
-            echo "Scan failed and soft fail is disabled. Exiting with failure."
-            exit 1
-          fi
-        else
-          echo "Scan completed successfully."
+        # Determine soft-fail argument
+        SOFT_FAIL_ARG=""
+        SOFT_FAIL="${SOFT_FAIL//[$'\t\r\n ']}"  # clean whitespace
+        if [ "$SOFT_FAIL" = "true" ]; then
+          SOFT_FAIL_ARG="--softfail"
         fi
+
+        # Run SAST scan (OpenGrep)
+        echo "Running AccuKnox SAST scan..."
+        ./accuknox-aspm-scanner scan $SOFT_FAIL_ARG sast \
+          --command "." \
+          --repo-url "https://github.com/${GITHUB_REPOSITORY}.git" \
+          --commit-ref "${GITHUB_REF#refs/heads/}" \
+          --commit-sha "${GITHUB_SHA}" \
+          --pipeline-id "$PIPELINE_ID" \
+          --job-url "$JOB_URL" \
+          --container-mode
+
