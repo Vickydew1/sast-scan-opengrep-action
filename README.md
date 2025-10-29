@@ -40,7 +40,6 @@ jobs:
       - name: "Run Accuknox SAST: Opengrep"
         uses: accuknox/sast-scan-opengrep-action@1.0.0
         with:
-          with:
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
