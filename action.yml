@@ -90,3 +90,10 @@ runs:
           --job-url "$JOB_URL" \
           --container-mode \
           $AI_ARGS
+
+    - name: Upload Scan Results  
+      uses: actions/upload-artifact@v4  
+      with:  
+        name: sast-scan-results  
+        path: results.json  
+        retention-days: 30
