@@ -6,10 +6,10 @@ branding:
   color: "purple"
 
 inputs:
-  soft_fail:
-    description: "Do not fail the pipeline if scan finds issues"
+  severity:
+    description: "Fail the pipeline if any finding has this severity (LOW, MEDIUM, HIGH, CRITICAL)"
     required: false
-    default: "true"
+    default: "CRITICAL"
   pipeline_id:
     description: "Pipeline/Job ID to correlate with CI/CD runs"
     required: false
@@ -35,13 +35,14 @@ inputs:
     description: "Anthropic API key for AI analysis"
     required: false
     default: ""
+
 runs:
   using: "composite"
   steps:
     - name: Run AccuKnox SAST Scan
       shell: bash
       env:
-        SOFT_FAIL: ${{ inputs.soft_fail }}
+        SEVERITY: ${{ inputs.severity }}
         PIPELINE_ID: ${{ inputs.pipeline_id }}
         JOB_URL: ${{ inputs.job_url }}
         ACCUKNOX_ENDPOINT: ${{ inputs.accuknox_endpoint }}
@@ -50,6 +51,8 @@ runs:
         ACCUKNOX_AI_ANALYSIS: ${{ inputs.accuknox_ai_analysis }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
       run: |
+        set -e
+
         # Validate required secrets
         if [ -z "$ACCUKNOX_ENDPOINT" ] || [ -z "$ACCUKNOX_TOKEN" ] || [ -z "$ACCUKNOX_LABEL" ]; then
           echo "ERROR: ACCUKNOX_ENDPOINT, ACCUKNOX_TOKEN, and ACCUKNOX_LABEL must be set!"
@@ -61,11 +64,11 @@ runs:
         curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
         chmod +x accuknox-aspm-scanner
 
-        # Determine soft-fail argument
-        SOFT_FAIL_ARG=""
-        SOFT_FAIL="${SOFT_FAIL//[$'\t\r\n ']}"  # clean whitespace
-        if [ "$SOFT_FAIL" = "true" ]; then
-          SOFT_FAIL_ARG="--softfail"
+        # Build severity argument if defined
+        SEVERITY_ARG=""
+        SEVERITY="${SEVERITY//[$'\t\r\n ']}" # Trim whitespace
+        if [ -n "$SEVERITY" ]; then
+          SEVERITY_ARG="--severity $SEVERITY"
         fi
 
         # Build AI analysis arguments
@@ -79,9 +82,9 @@ runs:
           fi
         fi
 
-        # Run SAST scan (OpenGrep)
+        # Run SAST scan
         echo "Running AccuKnox SAST scan..."
-        ./accuknox-aspm-scanner scan --keep-results $SOFT_FAIL_ARG sast \
+        ./accuknox-aspm-scanner scan sast \
           --command "." \
           --repo-url "https://github.com/${GITHUB_REPOSITORY}.git" \
           --commit-ref "${GITHUB_REF#refs/heads/}" \
@@ -89,4 +92,5 @@ runs:
           --pipeline-id "$PIPELINE_ID" \
           --job-url "$JOB_URL" \
           --container-mode \
+          $SEVERITY_ARG \
           $AI_ARGS
