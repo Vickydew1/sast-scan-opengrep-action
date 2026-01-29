@@ -10,6 +10,10 @@ inputs:
     description: "Do not fail the pipeline if scan finds issues"
     required: false
     default: "true"
+  severity:
+    description: "Comma-separated severities that should fail the pipeline"
+    required: false
+    default: ""
   pipeline_id:
     description: "Pipeline/Job ID to correlate with CI/CD runs"
     required: false
