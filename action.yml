@@ -107,14 +107,22 @@ runs:
       env:
         SEVERITY_LIST: ${{ inputs.severity }}
       run: |
+        # Skip check if SEVERITY_LIST is empty
+        if [ -z "$SEVERITY_LIST" ]; then
+          echo "No severity configured. Skipping severity check."
+          exit 0
+        fi
+    
         echo "Checking results.json for severities: $SEVERITY_LIST"
+    
         if [ ! -f results.json ]; then
           echo "ERROR: results.json not found!"
           exit 1
         fi
-
+    
+        # Find matching severities in the results
         FOUND=$(jq -r '.results[]?.extra.severity // empty | ascii_upcase' results.json | grep -E "$(echo $SEVERITY_LIST | tr ',' '|')")
-
+    
         if [ -n "$FOUND" ]; then
           echo "Pipeline failed due to finding(s) with severity: $FOUND"
           exit 1
