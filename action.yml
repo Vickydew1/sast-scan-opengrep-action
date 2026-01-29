@@ -9,7 +9,7 @@ inputs:
   severity:
     description: "Fail the pipeline if any finding has this severity (LOW, MEDIUM, HIGH, CRITICAL)"
     required: false
-    default: "CRITICAL"
+    default: ""
   pipeline_id:
     description: "Pipeline/Job ID to correlate with CI/CD runs"
     required: false
